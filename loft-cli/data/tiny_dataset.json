@@ -1,0 +1,5 @@
+[
+  { "text": "Question: What is LoRA? Answer: LoRA is a way to fine-tune models efficiently." },
+  { "text": "Question: What is QLoRA? Answer: QLoRA is LoRA with quantized models." },
+  { "text": "Question: Who is it for? Answer: Developers with low RAM laptops." }
+]

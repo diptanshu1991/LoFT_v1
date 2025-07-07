@@ -1,0 +1,21 @@
+# Ignore models and large files
+*.pt
+*.safetensors
+*.gguf
+*.onnx
+*.bin
+*.ckpt
+
+# Ignore data and outputs
+/models/
+/quantized/
+/checkpoints/
+/data/
+/__pycache__/
+/.ipynb_checkpoints/
+
+# VSCode and Python junk
+*.pyc
+*.pyo
+*.DS_Store
+.env

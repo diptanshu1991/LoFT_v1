@@ -16,7 +16,7 @@ def run_finetune(model_name, dataset_path, output_dir, num_train_epochs, use_saf
     peft_config = LoraConfig(
         task_type=TaskType.CAUSAL_LM,
         inference_mode=False,
-        r=4,
+        r=8,
         lora_alpha=16,
         lora_dropout=0.1
     )
@@ -25,9 +25,19 @@ def run_finetune(model_name, dataset_path, output_dir, num_train_epochs, use_saf
     dataset = load_dataset("json", data_files=dataset_path, split="train")
 
     def tokenize(example):
-        tokens = tokenizer(example["text"], truncation=True, padding="max_length", max_length=64)
+        prompt = example["instruction"]
+        if example.get("input"):
+            prompt += "\n" + example["input"]
+        prompt += "\n### Response:\n" + example["output"]
+
+        tokens = tokenizer(prompt, truncation=True, padding="max_length", max_length=128)
         tokens["labels"] = tokens["input_ids"].copy()
         return tokens
+
+    #def tokenize(example):
+    #   tokens = tokenizer(example["text"], truncation=True, padding="max_length", max_length=64)
+    #    tokens["labels"] = tokens["input_ids"].copy()
+    #    return tokens
 
     tokenized_dataset = dataset.map(tokenize)
 
@@ -35,8 +45,9 @@ def run_finetune(model_name, dataset_path, output_dir, num_train_epochs, use_saf
         output_dir=output_dir,
         per_device_train_batch_size=1,
         num_train_epochs=num_train_epochs,
-        save_strategy="no",
-        logging_steps=1,
+        save_strategy="epoch",
+        save_total_limit=1,
+        logging_steps=10,
         report_to=[]
     )
 
@@ -48,15 +59,11 @@ def run_finetune(model_name, dataset_path, output_dir, num_train_epochs, use_saf
 
     trainer.train()
 
-    final_model_path = os.path.join(output_dir, "final_model")
-    os.makedirs(final_model_path, exist_ok=True)
-#new lines
-    print("✅ Merging LoRA adapter into base model...")
-    merged_model = model.merge_and_unload()
-    merged_model.save_pretrained(final_model_path, safe_serialization=False)
-    tokenizer.save_pretrained(final_model_path)
+    adapter_dir = os.path.join(output_dir, "Final_Adapters_epoch3")
+    os.makedirs(adapter_dir, exist_ok=True)
 
-    print(f"✅ Final model saved at: {final_model_path}")
 
-    #trainer.save_model(final_model_path)
-    #tokenizer.save_pretrained(final_model_path)
+    print("✅ Saving LoRA adapter only (not merged)...")
+    model.save_pretrained(adapter_dir)
+    tokenizer.save_pretrained(adapter_dir)
+    print(f"✅ LoRA adapter saved at: {adapter_dir}")

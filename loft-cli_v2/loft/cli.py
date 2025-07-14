@@ -1,8 +1,9 @@
 import argparse
 from loft.train import run_finetune
 from loft.export import run_export
-#from loft.chat import run_chat
+from loft.chat import run_chat
 from loft.merge import run_merge
+from loft.quantize import run_quantize
 
 
 def main():
@@ -25,8 +26,10 @@ def main():
     export_parser.add_argument("--opset", type=int, default=19, help="ONNX opset version (default: 19)")
 
     # Chat subcommand
-    chat_parser = subparsers.add_parser("chat", help="Run inference with a trained LoRA model")
-    chat_parser.add_argument("--model_dir", type=str, required=True, help="Path to trained model directory")
+    chat_parser = subparsers.add_parser("chat", help="Run inference with a quantized GGUF model using llama.cpp")
+    chat_parser.add_argument("--model_path", type=str, required=True, help="Path to .gguf quantized model")
+    chat_parser.add_argument("--prompt", type=str, required=True, help="Prompt text to run")
+    chat_parser.add_argument("--n_tokens", type=int, default=128, help="Number of tokens to generate (default: 128)")
 
     #Merge subcommand
     merge_parser = subparsers.add_parser("merge", help="Merge base model with LoRA adapter")
@@ -35,6 +38,13 @@ def main():
                               help="Path to trained LoRA adapter (output of finetune)")
     merge_parser.add_argument("--output_dir", type=str, required=True, help="Where to save the merged model")
 
+    # Quantize subcommand
+    quantize_parser = subparsers.add_parser("quantize", help="Quantize a GGUF model")
+    quantize_parser.add_argument("--model_path", type=str, required=True, help="Path to input .gguf model")
+    quantize_parser.add_argument("--output_path", type=str, required=True,
+                                 help="Where to save the quantized .gguf model")
+    quantize_parser.add_argument("--quant_type", type=str, default="Q4_0",
+                                 help="Quantization type (e.g., Q4_0, Q5_1, Q8_0)")
 
     args = parser.parse_args()
 
@@ -54,7 +64,11 @@ def main():
             opset=args.opset
         )
     elif args.command == "chat":
-        run_chat(model_dir=args.model_dir)
+        run_chat(
+            model_path=args.model_path,
+            prompt=args.prompt,
+            n_tokens=args.n_tokens
+        )
 
     elif args.command == "merge":
         run_merge(
@@ -62,6 +76,14 @@ def main():
             adapter_dir=args.adapter_dir,
             output_dir=args.output_dir
         )
+
+    elif args.command == "quantize":
+        run_quantize(
+            model_path=args.model_path,
+            output_path=args.output_path,
+            quant_type=args.quant_type
+        )
+
 
     else:
         parser.print_help()

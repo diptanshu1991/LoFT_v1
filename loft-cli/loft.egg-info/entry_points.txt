@@ -1,3 +1,0 @@
-[console_scripts]
-loft = loft.cli:main
-
